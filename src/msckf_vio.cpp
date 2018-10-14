@@ -442,6 +442,12 @@ void MsckfVio::featureCallback(
 void MsckfVio::mocapOdomCallback(
     const nav_msgs::OdometryConstPtr& msg) {
   static bool first_mocap_odom_msg = true;
+  static tf::Transform T_b_w_tf_inital_tf; // inital tf, imu frame w.r.t. world frame of vio
+  static tf::Transform T_wvio_wcap_tf; // tf of world_mocap w.r.t. world_vio
+  static tf::Transform mocap_initial_frame_tf;
+  static Eigen::Isometry3d T_wvio_wcap;
+
+  if (!is_gravity_set) return;
 
   // If this is the first mocap odometry messsage, set
   // the initial frame.
@@ -458,6 +464,20 @@ void MsckfVio::mocapOdomCallback(
     //    msg->transform.rotation, orientation);
     mocap_initial_frame.linear() = orientation.toRotationMatrix();
     mocap_initial_frame.translation() = translation;
+
+    const IMUState& imu_state = state_server.imu_state;
+    Eigen::Isometry3d T_i_w = Eigen::Isometry3d::Identity();
+    T_i_w.linear() = quaternionToRotation(
+      imu_state.orientation).transpose();
+    T_i_w.translation() = imu_state.position;
+    Eigen::Isometry3d T_b_w = IMUState::T_imu_body * T_i_w * IMUState::T_imu_body.inverse();
+    tf::transformEigenToTF(T_b_w, T_b_w_tf_inital_tf);
+    tf::transformEigenToTF(mocap_initial_frame,mocap_initial_frame_tf);
+
+    T_wvio_wcap_tf = T_b_w_tf_inital_tf*mocap_initial_frame_tf.inverse();
+
+    tf::transformTFToEigen(T_wvio_wcap_tf,T_wvio_wcap);
+  
     first_mocap_odom_msg = false;
   }
 
@@ -476,7 +496,8 @@ void MsckfVio::mocapOdomCallback(
   Eigen::Isometry3d T_b_v_gt;
   T_b_v_gt.linear() = orientation.toRotationMatrix();
   T_b_v_gt.translation() = translation;
-  Eigen::Isometry3d T_b_w_gt = mocap_initial_frame.inverse() * T_b_v_gt;
+  // Eigen::Isometry3d T_b_w_gt = mocap_initial_frame.inverse() * T_b_v_gt;
+  Eigen:Isometry3d T_b_w_gt = T_wvio_wcap*T_b_v_gt;
 
   //Eigen::Vector3d body_velocity_gt;
   //tf::vectorMsgToEigen(msg->twist.twist.linear, body_velocity_gt);

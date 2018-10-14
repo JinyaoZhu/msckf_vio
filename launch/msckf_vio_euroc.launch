@@ -11,6 +11,8 @@
     <arg name="calibration_file" value="$(arg calibration_file)"/>
   </include>
 
+  <include file="$(find ground_truth_publisher)/launch/ground_truth_publisher.launch"/>
+
   <!-- Msckf Vio Nodelet  -->
   <group ns="$(arg robot)">
     <node pkg="nodelet" type="nodelet" name="vio"
@@ -24,7 +26,7 @@
       <param name="frame_rate" value="20"/>
       <param name="fixed_frame_id" value="$(arg fixed_frame_id)"/>
       <param name="child_frame_id" value="odom"/>
-      <param name="max_cam_state_size" value="20"/>
+      <param name="max_cam_state_size" value="15"/>
       <param name="position_std_threshold" value="8.0"/>
 
       <param name="rotation_threshold" value="0.2618"/>
@@ -55,7 +57,11 @@
       <remap from="~imu" to="/imu0"/>
       <remap from="~features" to="image_processor/features"/>
 
+      <remap from="~mocap_odom" to="/ground_truth_publisher/mocap_odom"/>
+
     </node>
   </group>
+
+<!-- <node name="rvizvisualisation" pkg="rviz" type="rviz" output="log" args="-d $(find msckf_vio)/rviz/rviz_euroc_config.rviz" /> -->
 
 </launch>

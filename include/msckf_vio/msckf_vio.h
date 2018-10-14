@@ -219,7 +219,7 @@ class MsckfVio {
     // Whether to publish tf or not.
     bool publish_tf;
 
-    // Framte rate of the stereo images. This variable is
+    // Frame rate of the stereo images. This variable is
     // only used to determine the timing threshold of
     // each iteration of the filter.
     double frame_rate;
